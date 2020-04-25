@@ -1,7 +1,11 @@
-# For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3.8
+FROM python:3.7-alpine as base
 
-EXPOSE 5000
+From base as builder
+
+RUN apk add gcc musl-dev python3-dev
+
+RUN mkdir /install
+WORKDIR /install
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -10,11 +14,16 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Install pip requirements
-ADD requirements.txt .
-RUN python -m pip install -r requirements.txt
+COPY requirements.txt /requirements.txt
+RUN pip install --install-option="--prefix=/install" -r /requirements.txt
 
+FROM base
+
+EXPOSE 5001
+
+COPY --from=builder /install /usr/local
+COPY src /app
 WORKDIR /app
-ADD . /app
 
 ENTRYPOINT [ "python" ]
 
